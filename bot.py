@@ -110,32 +110,41 @@ async def place_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👤 Please enter your Full Name:")
 
 async def name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "name" in context.user_data:
+        return
+
     context.user_data["name"] = update.message.text
     buttons = [[KeyboardButton(p)] for p in PRICES.keys()]
     await update.message.reply_text(
         "🧴 Select the fragrance you wish to order:",
         reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True)
     )
-
 async def product_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "name" not in context.user_data or "product" in context.user_data:
+        return
+
     context.user_data["product"] = update.message.text
     await update.message.reply_text("🔢 Enter Pcs. (number of pieces you want to order):")
-
 async def pcs_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "product" not in context.user_data or "pcs" in context.user_data:
+        return
+
     if not update.message.text.isdigit():
         return
+
     context.user_data["pcs"] = int(update.message.text)
     buttons = [[KeyboardButton(s)] for s in PRICES[context.user_data["product"]].keys()]
     await update.message.reply_text(
         "📦 Select size:",
         reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True)
     )
-
 async def size_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "pcs" not in context.user_data or "size" in context.user_data:
+        return
+
     context.user_data["size"] = update.message.text
     await update.message.reply_text(
         "🏠 Please enter your full delivery address in the Same Format:\n\n"
-       
         "👤 Full Name:--\n"
         "📞 Mobile Number (WhatsApp preferred):--\n\n"
         "🏠 House / Flat / Building No:--\n"
@@ -146,7 +155,9 @@ async def size_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🗺️ State:--\n"
         "📮 Pincode:--"
     )
-
+async def address_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "size" not in context.user_data:
+        return   
 async def address_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     oid = generate_order_id()
     product = context.user_data["product"]
@@ -381,9 +392,17 @@ def main():
     app.add_handler(CallbackQueryHandler(admin_action))
     app.add_handler(MessageHandler(filters.Regex("^📞 Contact Support$"), contact_support))
     app.add_handler(CallbackQueryHandler(dispatch_start, pattern="^dispatch_"))
+    app.add_handler(CallbackQueryHandler(admin_action, pattern="^(approve|reject)_"))
     app.add_handler(MessageHandler(filters.TEXT & filters.Chat(ADMIN_CHAT_ID),         dispatch_details_handler))
 
     app.run_polling()
 
+import time
+
 if __name__ == "__main__":
-    main()
+    while True:
+        try:
+            main()
+        except Exception as e:
+            print("🔥 BOT CRASHED:", e)
+            time.sleep(5)
