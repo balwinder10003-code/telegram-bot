@@ -20,7 +20,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ================= CONFIG =================
-BOT_TOKEN = "8531471950:AAHfglqA1Ip4rNMPFrJ48fIp1W5Ei6HJKWY"
+BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN"
 ADMIN_CHAT_ID = -5204323848
 SUPPORT_LINK = "https://t.me/+w6oFbvbrMq4xY2I9"
 SHEET_NAME = "ATTRAH_ORDERS"
@@ -64,14 +64,14 @@ def sheet_append(order):
         order["Payment_Status"],
         order["Payment_time"],
         order.get("tracking_id", ""),
-        order.get("tracking_url", "")
+        order.get("tracking_url", ""),
        order.get("Dispatch_Status", "")
     ])
 
 def sheet_update(order_id, status, tracking_id="", tracking_url=""):
     records = SHEET.get_all_records()
     for i, r in enumerate(records, start=2):
-        if r["Order ID"] == order_id:
+        if r["Order_ID"] == order_id:
             SHEET.update_cell(i, 9, status)
             SHEET.update_cell(i, 10, tracking_id)
             SHEET.update_cell(i, 11, tracking_url)
