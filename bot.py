@@ -1,3 +1,5 @@
+import os
+import json
 import logging
 import random
 import string
@@ -20,12 +22,16 @@ from PIL import Image
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ================= CONFIG =================
-BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN"
-ADMIN_CHAT_ID = -5204323848
-SUPPORT_LINK = "https://t.me/+w6oFbvbrMq4xY2I9"
-SHEET_NAME = "ATTRAH_ORDERS"
+# ================= SECURE CONFIG =================
 
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
+
+UPI_ID = os.environ["UPI_ID"]
+UPI_NAME = os.environ["UPI_NAME"]
+
+SUPPORT_LINK = os.environ["SUPPORT_LINK"]
+SHEET_NAME = os.environ.get("SHEET_NAME", "ATTRAH_ORDERS")
 logging.basicConfig(level=logging.INFO)
 
 ORDERS = {}
@@ -45,40 +51,69 @@ def init_sheet():
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(
-        "credentials.json", scope
-    )
+    def init_sheet():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+
     client = gspread.authorize(creds)
     return client.open(SHEET_NAME).sheet1
+    
 
 SHEET = init_sheet()
 
+def get_column_map():
+    headers = SHEET.row_values(1)
+    return {h.strip(): i + 1 for i, h in enumerate(headers)}
+
 def sheet_append(order):
-    SHEET.append_row([
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        order.get("order_id", ""),
-        order.get("name", ""),
-        "",
-        order.get("product", ""),
-        order.get("size", ""),
-        order.get("pcs", ""),
-        order.get("amount", ""),
-        order.get("address", ""),
-        order.get("status", ""),
-        "",
-        order.get("tracking_id", ""),
-        order.get("tracking_url", "")
-    ])
+    col = get_column_map()
+    row = [""] * len(col)
 
+    def set_col(name, value):
+        if name in col:
+            row[col[name] - 1] = value
+
+    set_col("Order ID", order.get("order_id", ""))
+    set_col("Customer Name", order.get("name", ""))
+    set_col("Mobile Number", order.get("mobile", ""))
+    set_col("Product", order.get("product", ""))
+    set_col("Size", order.get("size", ""))
+    set_col("Pcs", order.get("pcs", ""))
+    set_col("Amount", order.get("amount", ""))
+    set_col("Full Address", order.get("address", ""))
+    set_col("Payment Status", order.get("status", ""))
+    set_col("Payment Time", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    set_col("Tracking ID", order.get("tracking_id", ""))
+    set_col("Tracking Link", order.get("tracking_url", ""))
+    set_col("Dispatch Status", order.get("Dispatch_Status", ""))
+
+    SHEET.append_row(row)
 def sheet_update(order_id, status, tracking_id="", tracking_url=""):
+    col = get_column_map()
     records = SHEET.get_all_records()
-    for i, r in enumerate(records, start=2):
-        if r.get("order_id") == order_id:
-            SHEET.update_cell(i, 9, status)
-            SHEET.update_cell(i, 10, tracking_id)
-            SHEET.update_cell(i, 11, tracking_url)
-            break
 
+    for i, r in enumerate(records, start=2):
+        if r.get("Order ID") == order_id:
+            if "Payment Status" in col:
+                SHEET.update_cell(i, col["Payment Status"], status)
+            if "Payment Time" in col:
+                SHEET.update_cell(
+                    i,	
+                    col["Payment Time"],
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                )
+            if tracking_id and "Tracking ID" in col:
+                SHEET.update_cell(i, col["Tracking ID"], tracking_id)
+            if tracking_url and "Tracking Link" in col:
+                SHEET.update_cell(i, col["Tracking Link"], tracking_url)
+            if "Dispatch Status" in col:
+                SHEET.update_cell(i, col["Dispatch Status"], status)
+            break
 # ================= HELPERS =================
 def generate_order_id():
     while True:
@@ -384,3 +419,4 @@ if __name__ == "__main__":
         except Exception as e:
             print("🔥 BOT CRASHED:", e)
             time.sleep(5)
+
