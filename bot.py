@@ -47,7 +47,7 @@ PRICES = {
 
 # ================= GOOGLE SHEETS =================
 
-    def init_sheet():
+def init_sheet():
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
@@ -396,10 +396,10 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.Regex("^🛒 Place Order$"), place_order))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, name_handler))
-    app.add_handler(MessageHandler(filters.TEXT, product_handler))
-    app.add_handler(MessageHandler(filters.TEXT, pcs_handler))
-    app.add_handler(MessageHandler(filters.TEXT, size_handler))
-    app.add_handler(MessageHandler(filters.TEXT, address_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, product_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, pcs_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, size_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, address_handler))
     app.add_handler(MessageHandler(filters.PHOTO, screenshot_handler))
     app.add_handler(CallbackQueryHandler(dispatch_start, pattern="^dispatch_"))
     app.add_handler(CallbackQueryHandler(admin_action, pattern="^(approve|reject)_"))
