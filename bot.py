@@ -46,11 +46,7 @@ PRICES = {
 }
 
 # ================= GOOGLE SHEETS =================
-def init_sheet():
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
+
     def init_sheet():
     scope = [
         "https://spreadsheets.google.com/feeds",
